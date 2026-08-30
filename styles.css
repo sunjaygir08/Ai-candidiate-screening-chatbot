@@ -1,0 +1,85 @@
+/* RecruitFlow AI™ - Executive White & Brown Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  color-scheme: light;
+  
+  /* Color Palette Variables */
+  --bg-main: #F8F6F2;
+  --bg-card: #FFFFFF;
+  --bg-subtle: #F0ECE6;
+  --border-warm: #E5E0DA;
+  --border-subtle: #EFEBE4;
+  
+  --primary-brown: #5C4033;
+  --primary-brown-hover: #432E24;
+  --accent-caramel: #967259;
+  --accent-caramel-light: #F4ECE4;
+  
+  --text-dark: #2C221E;
+  --text-muted: #6B5E55;
+  --text-light: #A3968C;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-dark);
+  overflow-x: hidden;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #F0ECE6;
+}
+::-webkit-scrollbar-thumb {
+  background: #D5CDC4;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #B8AC9E;
+}
+
+/* Custom Executive Shadows & Glass Panels */
+.exec-shadow {
+  box-shadow: 0 10px 30px -5px rgba(44, 34, 30, 0.05), 0 4px 12px -2px rgba(44, 34, 30, 0.03);
+}
+
+.exec-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E5E0DA;
+  box-shadow: 0 4px 15px -3px rgba(92, 64, 51, 0.04);
+}
+
+.glow-brown {
+  box-shadow: 0 12px 35px -10px rgba(92, 64, 51, 0.18);
+}
+
+/* Custom Chat Container Height */
+#embedded-chatbot-container {
+  height: 640px;
+}
