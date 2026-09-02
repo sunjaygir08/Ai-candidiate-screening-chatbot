@@ -276,14 +276,6 @@
               <i class="fa-solid fa-clapperboard text-[#967259]"></i>
               Task 2 Deliverables & Architecture Overview
             </h2>
-            <p class="text-[#6B5E55] text-sm mt-1">60–90 second candidate walkthrough script and architectural summary paragraph.</p>
-          </div>
-
-          <button onclick="window.print()" class="bg-[#F0ECE6] hover:bg-[#E5E0DA] text-[#2C221E] px-4 py-2 rounded-xl border border-[#E5E0DA] text-xs font-semibold">
-            <i class="fa-solid fa-print mr-1.5"></i>Print Overview
-          </button>
-        </div>
-
         <!-- Required Deliverable Paragraph -->
         <div class="bg-[#F4ECE4] border border-[#967259]/30 p-6 rounded-2xl space-y-3">
           <div class="flex items-center gap-2 text-[#5C4033] font-bold text-sm uppercase tracking-wider">
@@ -291,62 +283,8 @@
             Architectural Summary Paragraph (Deliverable Requirement)
           </div>
           <p class="text-[#2C221E] text-sm leading-relaxed font-normal italic">
-            "RecruitFlow AI™ unifies conversational candidate screening, automated resume intake, and pipeline routing into a seamless event-driven architecture. As candidates interact with the screening chatbot, their role preferences, experience level, availability, location, and uploaded resume text are ingested and processed by a rule-based AI screening engine. The engine evaluates candidate attributes against team-configured role criteria, calculating an objective match score (0–100%) and categorizing candidates into three distinct status buckets: <strong>Qualified</strong> (≥75% match), <strong>Needs Review</strong> (50–74% match), or <strong>Not a Fit</strong> (&lt;50% match). If a candidate poses inquiries beyond standard screening parameters, the system triggers an automated human handoff mechanism, alerting recruiters on the live pipeline dashboard while assuring the candidate of prompt recruiter follow-up."
+            "RecruitFlow AI uses Gemini to evaluate candidate qualifications against configurable role criteria and returns a structured, explainable screening result. Application logic validates the AI output and enforces the required score thresholds: Qualified (&ge;75), Needs Review (50&ndash;74), and Not a Fit (&lt;50)."
           </p>
-        </div>
-
-        <!-- 60-90 Second Walkthrough Script -->
-        <div class="space-y-6">
-          <h3 class="text-lg font-bold text-[#2C221E] flex items-center gap-2">
-            <i class="fa-solid fa-video text-[#967259]"></i>
-            60–90 Second Video Walkthrough Script
-          </h3>
-
-          <div class="space-y-4 text-xs">
-            <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-2">
-              <div class="flex items-center justify-between text-[#5C4033] font-bold">
-                <span>[0:00 - 0:15] Scene 1: Introduction & Candidate Intake</span>
-                <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">15 Seconds</span>
-              </div>
-              <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Open the agency landing page. Click "Try Chatbot Screener" and type candidate details.<br/>
-                <strong class="text-[#2C221E]">Voiceover:</strong> "Welcome to RecruitFlow AI™. When a candidate lands on our agency portal, our AI chatbot initiates an engaging conversational intake, capturing their target role, experience level, location, and availability in seconds."
-              </p>
-            </div>
-
-            <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-2">
-              <div class="flex items-center justify-between text-[#5C4033] font-bold">
-                <span>[0:15 - 0:35] Scene 2: Real Resume Extraction & Gemini AI Screening</span>
-                <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">20 Seconds</span>
-              </div>
-              <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Drag and drop a PDF/DOCX/TXT resume into the chat widget, view extracted text preview, confirm summary, and click Submit & Screen.<br/>
-                <strong class="text-[#2C221E]">Voiceover:</strong> "Candidates simply attach their resume file. In real-time, PDF.js and Mammoth.js extract the text, and Gemini AI evaluates their qualifications against role rules, displaying match score, strengths, and rationale!"
-              </p>
-            </div>
-
-            <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-2">
-              <div class="flex items-center justify-between text-[#5C4033] font-bold">
-                <span>[0:35 - 0:55] Scene 3: Human Handoff Safeguard</span>
-                <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">20 Seconds</span>
-              </div>
-              <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Type a custom question in chat: "Can I speak directly to a recruiter about equity options?"<br/>
-                <strong class="text-[#2C221E]">Voiceover:</strong> "If a candidate asks out-of-scope questions, our human handoff trigger activates immediately, assuring the candidate of recruiter contact while flagging their profile on the recruiter portal."
-              </p>
-            </div>
-
-            <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-2">
-              <div class="flex items-center justify-between text-[#5C4033] font-bold">
-                <span>[0:55 - 1:20] Scene 4: Recruiter Pipeline Dashboard</span>
-                <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">25 Seconds</span>
-              </div>
-              <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Switch to the Recruiter Pipeline tab. Open candidate drawer to view match score, strengths, actual extracted resume text, handoff status, and status override controls.<br/>
-                <strong class="text-[#2C221E]">Voiceover:</strong> "On the Recruiter Dashboard, hiring managers see real-time metrics across Qualified, Needs Review, and Not a Fit candidates. One-click drawers reveal detailed AI rationale, extracted resumes, and handoff notes."
-              </p>
-            </div>
-          </div>
         </div>
       </div>
     </section>
