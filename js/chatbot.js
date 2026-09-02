@@ -712,7 +712,12 @@ Please review your details before running AI screening:
     const retryId = "retry-container-" + Date.now();
 
     try {
-      const response = await fetch("http://localhost:3001/api/screen-candidate", {
+      const API_BASE_URL =
+        window.location.hostname === "localhost"
+          ? "http://localhost:3001"
+          : "https://ai-candidate-screening-chatbot.vercel.app";
+
+      const response = await fetch(`${API_BASE_URL}/api/screen-candidate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
