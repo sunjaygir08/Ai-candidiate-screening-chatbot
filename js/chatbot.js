@@ -713,7 +713,7 @@ Please review your details before running AI screening:
 
     try {
       const API_BASE_URL =
-        window.location.hostname === "localhost"
+        ["localhost", "127.0.0.1"].includes(window.location.hostname)
           ? "http://localhost:3001"
           : "https://ai-candidate-screening-chatbot.vercel.app";
 
@@ -812,7 +812,7 @@ ${statusBadge}
 
 ${escapeHTML(err.message)}
 
-*Note: Please ensure the Express server is running on \`http://localhost:3001\` and a valid \`GEMINI_API_KEY\` is configured in your \`.env\` file.*
+*Note: Screening uses the deployed backend. If the problem continues, verify the backend deployment and its Gemini API configuration.*
       `;
 
       this.addBotMessage(errorMsgHTML);
