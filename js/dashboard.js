@@ -1,5 +1,6 @@
 /**
- * RecruitFlow AI™ - Recruiter Pipeline Dashboard Renderer & Controller (Executive White & Brown Theme)
+ * RecruitFlow AI™ - Recruiter Pipeline Dashboard Renderer & Controller
+ * Zero-State Polish, Dynamic Metric Counters, Sorting, Handoff Resolution, and CSV Export
  */
 
 class Dashboard {
@@ -12,7 +13,8 @@ class Dashboard {
     this.filters = {
       search: '',
       status: 'ALL',
-      role: 'ALL'
+      role: 'ALL',
+      sortBy: 'newest' // 'newest', 'oldest', 'score_desc', 'score_asc'
     };
 
     this.init();
@@ -39,15 +41,23 @@ class Dashboard {
     this.loadData();
     this.renderStats();
     this.renderCandidateContent();
+    this.updateNavBadge();
+  }
+
+  updateNavBadge() {
+    const badge = document.getElementById("nav-candidate-count");
+    if (badge) {
+      badge.textContent = this.candidates.length;
+    }
   }
 
   applyFilters() {
     this.filteredCandidates = this.candidates.filter(c => {
       const q = this.filters.search.toLowerCase();
       const matchesSearch = !q || 
-        c.fullName.toLowerCase().includes(q) ||
-        c.targetRole.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
+        (c.fullName && c.fullName.toLowerCase().includes(q)) ||
+        (c.targetRole && c.targetRole.toLowerCase().includes(q)) ||
+        (c.email && c.email.toLowerCase().includes(q)) ||
         (c.skills && c.skills.some(s => s.toLowerCase().includes(q)));
 
       let matchesStatus = true;
@@ -60,6 +70,20 @@ class Dashboard {
       const matchesRole = this.filters.role === 'ALL' || c.targetRole === this.filters.role;
 
       return matchesSearch && matchesStatus && matchesRole;
+    });
+
+    // Sorting
+    this.filteredCandidates.sort((a, b) => {
+      if (this.filters.sortBy === 'score_desc') {
+        return (b.matchScore || 0) - (a.matchScore || 0);
+      } else if (this.filters.sortBy === 'score_asc') {
+        return (a.matchScore || 0) - (b.matchScore || 0);
+      } else if (this.filters.sortBy === 'oldest') {
+        return new Date(a.appliedAt || 0) - new Date(b.appliedAt || 0);
+      } else {
+        // newest
+        return new Date(b.appliedAt || 0) - new Date(a.appliedAt || 0);
+      }
     });
   }
 
@@ -87,7 +111,7 @@ class Dashboard {
               <span>Export CSV</span>
             </button>
 
-            <button id="reset-data-btn" title="Reset to Sample Data" class="bg-[#F0ECE6] hover:bg-rose-100 text-[#6B5E55] hover:text-rose-700 px-3 py-2.5 rounded-xl border border-[#E5E0DA] text-sm transition-all">
+            <button id="reset-data-btn" title="Reset Database" class="bg-[#F0ECE6] hover:bg-rose-100 text-[#6B5E55] hover:text-rose-700 px-3 py-2.5 rounded-xl border border-[#E5E0DA] text-sm transition-all">
               <i class="fa-solid fa-rotate text-sm"></i>
             </button>
           </div>
@@ -101,7 +125,7 @@ class Dashboard {
         <!-- Filter & Search Control Panel -->
         <div class="bg-white border border-[#E5E0DA] p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-4 exec-shadow">
           <!-- Search Input -->
-          <div class="relative w-full lg:w-80">
+          <div class="relative w-full lg:w-72">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3968C] text-sm"></i>
             <input 
               type="text" 
@@ -130,6 +154,14 @@ class Dashboard {
               <option value="Full Stack Developer">Full Stack Developer</option>
               <option value="AI / ML Engineer">AI / ML Engineer</option>
               <option value="Product Manager">Product Manager</option>
+            </select>
+
+            <!-- Sort By -->
+            <select id="dash-sort-filter" class="bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl px-3 py-2.5 text-xs text-[#2C221E] font-medium focus:outline-none focus:border-[#5C4033]">
+              <option value="newest" ${this.filters.sortBy === 'newest' ? 'selected' : ''}>Newest First</option>
+              <option value="oldest" ${this.filters.sortBy === 'oldest' ? 'selected' : ''}>Oldest First</option>
+              <option value="score_desc" ${this.filters.sortBy === 'score_desc' ? 'selected' : ''}>Highest Score</option>
+              <option value="score_asc" ${this.filters.sortBy === 'score_asc' ? 'selected' : ''}>Lowest Score</option>
             </select>
 
             <!-- View Switcher -->
@@ -167,12 +199,14 @@ class Dashboard {
 
     this.renderStats();
     this.renderCandidateContent();
+    this.updateNavBadge();
   }
 
   renderStats() {
     const container = document.getElementById("dashboard-stats-container");
     if (!container) return;
 
+    // Calculated purely from actual candidates
     const total = this.candidates.length;
     const qualified = this.candidates.filter(c => c.status === 'Qualified').length;
     const review = this.candidates.filter(c => c.status === 'Needs Review').length;
@@ -227,7 +261,7 @@ class Dashboard {
         </div>
         <div>
           <div class="text-2xl font-extrabold text-[#5C4033]">${handoff}</div>
-          <div class="text-xs text-[#6B5E55] font-semibold">Handoff Pending</div>
+          <div class="text-xs text-[#6B5E55] font-semibold">Handoff Requested</div>
         </div>
       </div>
     `;
@@ -237,14 +271,39 @@ class Dashboard {
     const container = document.getElementById("candidate-pipeline-content");
     if (!container) return;
 
+    // Professional Empty State requirement
+    if (this.candidates.length === 0) {
+      container.innerHTML = `
+        <div class="bg-white border border-[#E5E0DA] rounded-2xl p-12 text-center space-y-4 exec-shadow">
+          <div class="w-16 h-16 rounded-2xl bg-[#F4ECE4] text-[#5C4033] flex items-center justify-center text-2xl mx-auto shadow-sm">
+            <i class="fa-solid fa-user-check"></i>
+          </div>
+          <div class="space-y-1">
+            <h3 class="text-xl font-extrabold text-[#2C221E]">Your pipeline is ready</h3>
+            <p class="text-[#6B5E55] text-sm max-w-md mx-auto">
+              Candidates will appear here after completing the conversational chatbot intake and resume screening.
+            </p>
+          </div>
+          <button 
+            onclick="document.querySelector('[data-target=\'landing-view\']').click(); document.getElementById('chat-section').scrollIntoView({ behavior: 'smooth' });"
+            class="bg-[#5C4033] hover:bg-[#432E24] text-white text-xs font-bold px-5 py-2.5 rounded-xl transition-all shadow-md inline-flex items-center gap-2"
+          >
+            <i class="fa-solid fa-comments"></i>
+            <span>Test Candidate Screener</span>
+          </button>
+        </div>
+      `;
+      return;
+    }
+
     if (this.filteredCandidates.length === 0) {
       container.innerHTML = `
-        <div class="bg-white border border-[#E5E0DA] rounded-2xl p-12 text-center space-y-3 exec-shadow">
-          <div class="w-16 h-16 rounded-full bg-[#F0ECE6] text-[#A3968C] flex items-center justify-center text-2xl mx-auto">
-            <i class="fa-solid fa-folder-open"></i>
+        <div class="bg-white border border-[#E5E0DA] rounded-2xl p-10 text-center space-y-3 exec-shadow">
+          <div class="w-12 h-12 rounded-full bg-[#F0ECE6] text-[#A3968C] flex items-center justify-center text-xl mx-auto">
+            <i class="fa-solid fa-magnifying-glass"></i>
           </div>
-          <h3 class="text-lg font-bold text-[#2C221E]">No candidates match filters</h3>
-          <p class="text-[#6B5E55] text-xs max-w-sm mx-auto">Try clearing search filters or initiate a chatbot intake on the landing page.</p>
+          <h3 class="text-base font-bold text-[#2C221E]">No candidates match filters</h3>
+          <p class="text-[#6B5E55] text-xs">Try clearing search inputs or adjusting status/role filters.</p>
         </div>
       `;
       return;
@@ -260,7 +319,7 @@ class Dashboard {
   renderTable(container) {
     const rowsHTML = this.filteredCandidates.map(c => {
       const statusBadge = this.getStatusBadge(c.status, c.handoffRequested);
-      const appliedDate = new Date(c.appliedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+      const appliedDate = new Date(c.appliedAt || Date.now()).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
       
       return `
         <tr class="border-b border-[#E5E0DA] hover:bg-[#F8F6F2] transition-colors group cursor-pointer" onclick="window.dashboardApp.openDetailModal('${c.id}')">
@@ -268,7 +327,7 @@ class Dashboard {
           <td class="py-4 px-6">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-full bg-[#5C4033] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                ${c.fullName.charAt(0).toUpperCase()}
+                ${(c.fullName || 'C').charAt(0).toUpperCase()}
               </div>
               <div>
                 <div class="font-bold text-[#2C221E] text-sm group-hover:text-[#967259] transition-colors flex items-center gap-2">
@@ -290,9 +349,9 @@ class Dashboard {
           <td class="py-4 px-6">
             <div class="flex items-center gap-2">
               <div class="w-12 bg-[#E5E0DA] h-2 rounded-full overflow-hidden">
-                <div class="h-full ${c.matchScore >= 75 ? 'bg-emerald-600' : c.matchScore >= 50 ? 'bg-amber-600' : 'bg-rose-600'}" style="width: ${c.matchScore}%"></div>
+                <div class="h-full ${c.matchScore >= 75 ? 'bg-emerald-600' : c.matchScore >= 50 ? 'bg-amber-600' : 'bg-rose-600'}" style="width: ${c.matchScore || 0}%"></div>
               </div>
-              <span class="text-xs font-bold ${c.matchScore >= 75 ? 'text-emerald-800' : c.matchScore >= 50 ? 'text-amber-800' : 'text-rose-800'}">${c.matchScore}%</span>
+              <span class="text-xs font-bold ${c.matchScore >= 75 ? 'text-emerald-800' : c.matchScore >= 50 ? 'text-amber-800' : 'text-rose-800'}">${c.matchScore || 0}%</span>
             </div>
           </td>
 
@@ -344,7 +403,7 @@ class Dashboard {
                 <th class="py-4 px-6">AI Score</th>
                 <th class="py-4 px-6">Status</th>
                 <th class="py-4 px-6">Resume</th>
-                <th class="py-4 px-6 text-right">Applied</th>
+                <th class="py-4 px-6 text-right">Submitted</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[#E5E0DA]">
@@ -387,9 +446,17 @@ class Dashboard {
           </div>
 
           ${c.handoffRequested ? `
-            <div class="bg-[#F4ECE4] border border-[#967259]/40 rounded-lg p-2 text-[11px] text-[#5C4033] flex items-center gap-1.5 font-semibold">
-              <i class="fa-solid fa-headset text-[#967259]"></i>
-              <span>Handoff Requested</span>
+            <div class="bg-[#F4ECE4] border border-[#967259]/40 rounded-lg p-2 text-[11px] text-[#5C4033] flex items-center justify-between font-semibold">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-headset text-[#967259]"></i>
+                Handoff Requested
+              </span>
+              <button 
+                onclick="event.stopPropagation(); window.dashboardApp.resolveHandoff('${c.id}')"
+                class="text-[10px] bg-white border border-[#E5E0DA] text-[#5C4033] px-2 py-0.5 rounded hover:bg-[#5C4033] hover:text-white transition-all"
+              >
+                Resolve
+              </button>
             </div>
           ` : ''}
         </div>
@@ -440,21 +507,27 @@ class Dashboard {
     const modal = document.getElementById("candidate-detail-modal");
     const container = modal.querySelector(".bg-white");
 
-    const evalResult = candidate.screeningResult || ScreeningEngine.evaluateCandidate(candidate);
+    const evalResult = candidate.screeningResult || {
+      matchScore: candidate.matchScore || 50,
+      status: candidate.status,
+      recommendation: "AI Screening evaluation result recorded.",
+      strengths: [],
+      concerns: []
+    };
 
     container.innerHTML = `
       <!-- Modal Header -->
       <div class="flex items-center justify-between p-6 border-b border-[#E5E0DA] bg-[#F0ECE6]/80">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-xl bg-[#5C4033] flex items-center justify-center text-white font-bold text-lg shadow-md">
-            ${candidate.fullName.charAt(0).toUpperCase()}
+            ${(candidate.fullName || 'C').charAt(0).toUpperCase()}
           </div>
           <div>
             <div class="flex items-center gap-3">
               <h3 class="text-xl font-extrabold text-[#2C221E]">${candidate.fullName}</h3>
               ${this.getStatusBadge(candidate.status, candidate.handoffRequested)}
             </div>
-            <p class="text-[#6B5E55] text-xs font-medium">${candidate.targetRole} • Applied ${new Date(candidate.appliedAt).toLocaleDateString()}</p>
+            <p class="text-[#6B5E55] text-xs font-medium">${candidate.targetRole} • Submitted ${new Date(candidate.appliedAt || Date.now()).toLocaleDateString()}</p>
           </div>
         </div>
 
@@ -469,7 +542,7 @@ class Dashboard {
         <div class="lg:col-span-6 space-y-6">
           <!-- Overview Cards -->
           <div class="bg-[#F8F6F2] border border-[#E5E0DA] p-4 rounded-xl space-y-3">
-            <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">Candidate Contact & Overview</h4>
+            <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">Candidate Profile Overview</h4>
             
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div>
@@ -493,15 +566,15 @@ class Dashboard {
                 <span class="text-[#2C221E] font-bold">${candidate.availability || 'Immediate'}</span>
               </div>
               <div>
-                <span class="text-[#6B5E55] block font-medium">Salary Target</span>
-                <span class="text-[#2C221E] font-bold">${candidate.salaryExpectation || 'Negotiable'}</span>
+                <span class="text-[#6B5E55] block font-medium">Target Role</span>
+                <span class="text-[#2C221E] font-bold">${candidate.targetRole}</span>
               </div>
             </div>
           </div>
 
           <!-- Skills Chips -->
           <div class="space-y-2">
-            <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Skills & Technologies</h4>
+            <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Skills & Technical Competencies</h4>
             <div class="flex flex-wrap gap-1.5">
               ${(candidate.skills || []).map(s => `
                 <span class="px-2.5 py-1 rounded-lg text-xs bg-[#F0ECE6] text-[#2C221E] border border-[#E5E0DA] font-semibold">${s}</span>
@@ -509,25 +582,35 @@ class Dashboard {
             </div>
           </div>
 
-          <!-- Resume Text Preview -->
+          <!-- Extracted Resume Text -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider flex items-center gap-2">
                 <i class="fa-solid fa-file-lines text-[#967259]"></i>
-                Resume Content (${candidate.resumeFileName || 'Resume.pdf'})
+                Extracted Resume Content (${candidate.resumeFileName || 'Resume.pdf'})
               </h4>
             </div>
             <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] text-[#2C221E] text-xs font-mono leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">
-              ${candidate.resumeText || 'No detailed resume text submitted.'}
+              ${candidate.resumeText || 'No resume text extracted.'}
             </div>
           </div>
 
+          <!-- Human Handoff Info & Resolution -->
           ${candidate.handoffRequested ? `
-            <div class="bg-[#F4ECE4] border border-[#967259]/50 p-4 rounded-xl space-y-1">
-              <h4 class="text-xs font-bold text-[#5C4033] flex items-center gap-2">
-                <i class="fa-solid fa-headset text-[#967259]"></i> Human Recruiter Handoff Note
-              </h4>
-              <p class="text-xs text-[#2C221E] italic">"${candidate.handoffMessage || 'Candidate requested human follow up during screening.'}"</p>
+            <div class="bg-[#F4ECE4] border border-[#967259]/50 p-4 rounded-xl space-y-2">
+              <div class="flex items-center justify-between">
+                <h4 class="text-xs font-bold text-[#5C4033] flex items-center gap-2">
+                  <i class="fa-solid fa-headset text-[#967259]"></i> Human Recruiter Handoff Requested
+                </h4>
+                <button 
+                  onclick="window.dashboardApp.resolveHandoffModal('${candidate.id}')"
+                  class="text-xs bg-[#5C4033] hover:bg-[#432E24] text-white px-3 py-1 rounded-lg font-semibold shadow-sm"
+                >
+                  Mark Handoff Resolved
+                </button>
+              </div>
+              <p class="text-xs text-[#2C221E] italic">Reason: "${candidate.handoffReason || 'Candidate requested recruiter follow-up'}"</p>
+              ${candidate.handoffTimestamp ? `<p class="text-[10px] text-[#6B5E55]">Requested: ${new Date(candidate.handoffTimestamp).toLocaleString()}</p>` : ''}
             </div>
           ` : ''}
         </div>
@@ -537,67 +620,71 @@ class Dashboard {
           <!-- AI Score & Rationale -->
           <div class="bg-[#F8F6F2] border border-[#E5E0DA] p-5 rounded-xl space-y-4">
             <div class="flex items-center justify-between">
-              <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">AI Screening Breakdown</h4>
-              <span class="text-xl font-extrabold ${evalResult.matchScore >= 75 ? 'text-emerald-800' : evalResult.matchScore >= 50 ? 'text-amber-800' : 'text-rose-800'}">
-                ${evalResult.matchScore}% Match
+              <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">Gemini AI Screening Breakdown</h4>
+              <span class="text-xl font-extrabold ${evalResult.score >= 75 || evalResult.matchScore >= 75 ? 'text-emerald-800' : (evalResult.score >= 50 || evalResult.matchScore >= 50) ? 'text-amber-800' : 'text-rose-800'}">
+                ${evalResult.score || evalResult.matchScore || 0}% Match
               </span>
             </div>
 
             <div class="p-3 bg-white rounded-lg border border-[#E5E0DA] text-xs text-[#2C221E]">
-              <strong class="text-[#5C4033] block mb-1">Recommendation Summary:</strong>
-              ${evalResult.recommendation}
+              <strong class="text-[#5C4033] block mb-1">AI Rationale Summary:</strong>
+              ${evalResult.rationale || evalResult.recommendation || 'No rationale provided.'}
             </div>
 
             <!-- Strengths -->
             <div class="space-y-1">
-              <span class="text-xs font-bold text-emerald-800">Matching Strengths:</span>
+              <span class="text-xs font-bold text-emerald-800">Strengths:</span>
               <ul class="text-xs text-[#2C221E] space-y-1 pl-4 list-disc">
-                ${(evalResult.strengths || []).map(st => `<li>${st}</li>`).join("")}
+                ${(evalResult.strengths || []).map(st => `<li>${st}</li>`).join("") || '<li>Satisfies base criteria</li>'}
               </ul>
             </div>
 
-            <!-- Concerns -->
-            ${(evalResult.concerns && evalResult.concerns.length > 0) ? `
+            <!-- Skill Gaps -->
+            ${(evalResult.skillGaps || evalResult.missingSkills || evalResult.concerns) ? `
               <div class="space-y-1">
-                <span class="text-xs font-bold text-rose-800">Gaps & Concerns:</span>
+                <span class="text-xs font-bold text-rose-800">Skill Gaps & Concerns:</span>
                 <ul class="text-xs text-[#2C221E] space-y-1 pl-4 list-disc">
-                  ${evalResult.concerns.map(c => `<li>${c}</li>`).join("")}
+                  ${(evalResult.skillGaps || evalResult.missingSkills || evalResult.concerns || []).map(c => `<li>${c}</li>`).join("") || '<li>None identified</li>'}
                 </ul>
               </div>
             ` : ''}
+
+            <p class="text-[10px] text-[#6B5E55] italic pt-1 border-t border-[#E5E0DA]">
+              Disclaimer: AI screening is an assistive recommendation and does not replace recruiter judgment.
+            </p>
           </div>
 
-          <!-- Recruiter Notes & Quick Status Override -->
+          <!-- Recruiter Notes & Status Override -->
           <div class="space-y-3">
-            <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Recruiter Decision & Notes</h4>
+            <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Recruiter Override & Notes</h4>
             
             <div class="flex items-center gap-2">
               <button 
                 onclick="window.dashboardApp.updateModalStatus('${candidate.id}', 'Qualified')"
                 class="flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${candidate.status === 'Qualified' ? 'bg-emerald-700 text-white border-emerald-700 shadow-md' : 'bg-white text-[#2C221E] border-[#E5E0DA] hover:bg-[#F0ECE6]'}"
               >
-                Mark Qualified
+                Set Qualified
               </button>
 
               <button 
                 onclick="window.dashboardApp.updateModalStatus('${candidate.id}', 'Needs Review')"
                 class="flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${candidate.status === 'Needs Review' ? 'bg-amber-600 text-white border-amber-600 shadow-md' : 'bg-white text-[#2C221E] border-[#E5E0DA] hover:bg-[#F0ECE6]'}"
               >
-                Needs Review
+                Set Review
               </button>
 
               <button 
                 onclick="window.dashboardApp.updateModalStatus('${candidate.id}', 'Not a Fit')"
                 class="flex-1 py-2 rounded-xl text-xs font-bold border transition-all ${candidate.status === 'Not a Fit' ? 'bg-rose-700 text-white border-rose-700 shadow-md' : 'bg-white text-[#2C221E] border-[#E5E0DA] hover:bg-[#F0ECE6]'}"
               >
-                Not a Fit
+                Set Not Fit
               </button>
             </div>
 
             <textarea 
               id="recruiter-notes-input"
               rows="3" 
-              placeholder="Add recruiter notes (e.g. interviewed on phone, salary flexible)..." 
+              placeholder="Add recruiter notes (e.g., candidate interviewed, salary flexible)..." 
               class="w-full bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl p-3 text-xs text-[#2C221E] placeholder-[#A3968C] focus:outline-none focus:border-[#5C4033]"
             >${candidate.notes || ''}</textarea>
 
@@ -638,6 +725,17 @@ class Dashboard {
 
   updateModalStatus(candidateId, newStatus) {
     this.changeStatus(candidateId, newStatus);
+    this.openDetailModal(candidateId);
+  }
+
+  resolveHandoff(candidateId) {
+    StorageService.resolveHandoff(candidateId);
+    this.refresh();
+    this.showToast("Handoff request resolved!");
+  }
+
+  resolveHandoffModal(candidateId) {
+    this.resolveHandoff(candidateId);
     this.openDetailModal(candidateId);
   }
 
@@ -734,7 +832,7 @@ class Dashboard {
       return;
     }
 
-    const headers = ["ID", "Name", "Email", "Role", "Experience (Yrs)", "Status", "AI Match Score", "Applied Date", "Skills"];
+    const headers = ["ID", "Name", "Email", "Role", "Experience (Yrs)", "Status", "AI Match Score", "Submitted Date", "Skills"];
     const rows = this.candidates.map(c => [
       c.id,
       `"${c.fullName}"`,
@@ -743,7 +841,7 @@ class Dashboard {
       c.experienceYears,
       c.status,
       `${c.matchScore}%`,
-      `"${new Date(c.appliedAt).toLocaleDateString()}"`,
+      `"${new Date(c.appliedAt || Date.now()).toLocaleDateString()}"`,
       `"${(c.skills || []).join(', ')}"`
     ]);
 
@@ -786,6 +884,15 @@ class Dashboard {
       });
     }
 
+    const sortFilter = document.getElementById("dash-sort-filter");
+    if (sortFilter) {
+      sortFilter.addEventListener("change", (e) => {
+        this.filters.sortBy = e.target.value;
+        this.applyFilters();
+        this.renderCandidateContent();
+      });
+    }
+
     const tableBtn = document.getElementById("view-table-btn");
     const kanbanBtn = document.getElementById("view-kanban-btn");
 
@@ -818,10 +925,10 @@ class Dashboard {
     const resetBtn = document.getElementById("reset-data-btn");
     if (resetBtn) {
       resetBtn.addEventListener("click", () => {
-        if (confirm("Reset database to initial sample candidates?")) {
+        if (confirm("Reset candidate database to zero candidates?")) {
           StorageService.resetAllData();
           this.refresh();
-          this.showToast("Database reset to sample candidates!");
+          this.showToast("Database reset to zero candidates!");
         }
       });
     }

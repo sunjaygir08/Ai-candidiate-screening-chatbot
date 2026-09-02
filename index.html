@@ -11,6 +11,17 @@
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
+  <!-- PDF.js for genuine browser PDF text parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+
+  <!-- Mammoth.js for genuine browser DOCX text parsing -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
   <!-- Custom Styles -->
   <link rel="stylesheet" href="styles.css" />
 </head>
@@ -42,7 +53,7 @@
         <button data-target="dashboard-view" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-medium text-[#6B5E55] hover:text-[#2C221E] hover:bg-white transition-all flex items-center gap-2">
           <i class="fa-solid fa-chart-kanban text-xs"></i>
           <span>Recruiter Pipeline</span>
-          <span id="nav-candidate-count" class="bg-[#967259]/15 text-[#5C4033] px-1.5 py-0.5 rounded-full text-[10px] font-bold">4</span>
+          <span id="nav-candidate-count" class="bg-[#967259]/15 text-[#5C4033] px-1.5 py-0.5 rounded-full text-[10px] font-bold">0</span>
         </button>
 
         <button data-target="walkthrough-view" class="nav-tab-btn px-4 py-2 rounded-xl text-xs font-medium text-[#6B5E55] hover:text-[#2C221E] hover:bg-white transition-all flex items-center gap-2">
@@ -96,7 +107,7 @@
             </h1>
 
             <p class="text-[#6B5E55] text-base sm:text-lg leading-relaxed font-normal">
-              Elevate candidate intake into a refined conversational experience. Screen applicants against role requirements, extract resume highlights, calculate match scores, and sync qualified talent directly to your recruiter dashboard.
+              Elevate candidate intake into a refined conversational experience. Screen applicants against role requirements, extract resume highlights (PDF, DOCX, TXT), calculate match scores, and sync qualified talent directly to your recruiter dashboard.
             </p>
 
             <!-- Key Feature Badges -->
@@ -107,11 +118,11 @@
               </div>
               <div class="bg-white border border-[#E5E0DA] p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
                 <i class="fa-solid fa-file-arrow-up text-[#5C4033]"></i>
-                <span class="text-xs font-semibold text-[#2C221E]">Resume Intake</span>
+                <span class="text-xs font-semibold text-[#2C221E]">PDF/DOCX/TXT Parse</span>
               </div>
               <div class="bg-white border border-[#E5E0DA] p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
                 <i class="fa-solid fa-bolt text-[#967259]"></i>
-                <span class="text-xs font-semibold text-[#2C221E]">Instant AI Scoring</span>
+                <span class="text-xs font-semibold text-[#2C221E]">Gemini AI Scoring</span>
               </div>
               <div class="bg-white border border-[#E5E0DA] p-3 rounded-xl flex items-center gap-2.5 shadow-sm">
                 <i class="fa-solid fa-shield-halved text-[#5C4033]"></i>
@@ -146,7 +157,7 @@
             <div class="bg-white border border-[#E5E0DA] p-6 rounded-2xl exec-shadow space-y-4 glow-brown">
               <div class="flex items-center justify-between border-b border-[#E5E0DA] pb-3">
                 <span class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Screening Architecture</span>
-                <span class="text-xs bg-[#F4ECE4] text-[#5C4033] px-2.5 py-0.5 rounded-full font-semibold border border-[#967259]/20">Automated</span>
+                <span class="text-xs bg-[#F4ECE4] text-[#5C4033] px-2.5 py-0.5 rounded-full font-semibold border border-[#967259]/20">Gemini Powered</span>
               </div>
 
               <!-- Workflow Mini Cards -->
@@ -162,16 +173,16 @@
                 <div class="bg-[#F0ECE6]/60 p-3 rounded-xl border border-[#E5E0DA] flex items-center gap-3">
                   <div class="w-8 h-8 rounded-lg bg-[#967259] text-white flex items-center justify-center text-xs font-bold">2</div>
                   <div>
-                    <div class="text-xs font-bold text-[#2C221E]">Resume Intake & Parser</div>
-                    <div class="text-[11px] text-[#6B5E55]">Drag & drop file or structured text intake</div>
+                    <div class="text-xs font-bold text-[#2C221E]">PDF/DOCX/TXT Parser</div>
+                    <div class="text-[11px] text-[#6B5E55]">Browser text extraction via PDF.js & Mammoth.js</div>
                   </div>
                 </div>
 
                 <div class="bg-[#F0ECE6]/60 p-3 rounded-xl border border-[#E5E0DA] flex items-center gap-3">
                   <div class="w-8 h-8 rounded-lg bg-[#5C4033] text-white flex items-center justify-center text-xs font-bold">3</div>
                   <div>
-                    <div class="text-xs font-bold text-[#2C221E]">Rule-Based AI Evaluation</div>
-                    <div class="text-[11px] text-[#6B5E55]">Scores match %, tags Qualified / Review / Not Fit</div>
+                    <div class="text-xs font-bold text-[#2C221E]">Gemini AI API Screening</div>
+                    <div class="text-[11px] text-[#6B5E55]">Responsible AI scoring, status & rationale</div>
                   </div>
                 </div>
 
@@ -179,7 +190,7 @@
                   <div class="w-8 h-8 rounded-lg bg-[#967259] text-white flex items-center justify-center text-xs font-bold">4</div>
                   <div>
                     <div class="text-xs font-bold text-[#2C221E]">Recruiter Pipeline Sync</div>
-                    <div class="text-[11px] text-[#6B5E55]">Live dashboard updates + Human Handoff alerts</div>
+                    <div class="text-[11px] text-[#6B5E55]">Live dashboard updates + Human Handoff resolution</div>
                   </div>
                 </div>
               </div>
@@ -204,6 +215,12 @@
         <div class="max-w-3xl mx-auto">
           <div id="embedded-chatbot-container">
             <!-- Chatbot JS injects UI here -->
+          </div>
+
+          <!-- Privacy Disclaimer Notice -->
+          <div class="mt-3 text-center text-[11px] text-[#6B5E55] italic">
+            <i class="fa-solid fa-lock mr-1 text-[#967259]"></i>
+            Privacy Notice: Candidate information and resume content are processed strictly for recruitment screening purposes.
           </div>
         </div>
       </div>
@@ -292,19 +309,19 @@
                 <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">15 Seconds</span>
               </div>
               <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Open the agency landing page. Click "Try Chatbot Screener" and type candidate details (e.g., Sarah Jenkins, Senior Frontend Engineer, 5 years experience in React & TypeScript, San Francisco).<br/>
+                <strong class="text-[#2C221E]">Action:</strong> Open the agency landing page. Click "Try Chatbot Screener" and type candidate details.<br/>
                 <strong class="text-[#2C221E]">Voiceover:</strong> "Welcome to RecruitFlow AI™. When a candidate lands on our agency portal, our AI chatbot initiates an engaging conversational intake, capturing their target role, experience level, location, and availability in seconds."
               </p>
             </div>
 
             <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-2">
               <div class="flex items-center justify-between text-[#5C4033] font-bold">
-                <span>[0:15 - 0:35] Scene 2: Resume Intake & Instant AI Screening</span>
+                <span>[0:15 - 0:35] Scene 2: Real Resume Extraction & Gemini AI Screening</span>
                 <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">20 Seconds</span>
               </div>
               <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Drag and drop or paste resume text into the chat widget and click Submit & Screen.<br/>
-                <strong class="text-[#2C221E]">Voiceover:</strong> "Candidates simply attach or paste their resume summary. In real-time, the AI screening engine parses their experience against role rules. Here, Sarah scores a 92% match and is flagged as 'Qualified' with custom next steps!"
+                <strong class="text-[#2C221E]">Action:</strong> Drag and drop a PDF/DOCX/TXT resume into the chat widget, view extracted text preview, confirm summary, and click Submit & Screen.<br/>
+                <strong class="text-[#2C221E]">Voiceover:</strong> "Candidates simply attach their resume file. In real-time, PDF.js and Mammoth.js extract the text, and Gemini AI evaluates their qualifications against role rules, displaying match score, strengths, and rationale!"
               </p>
             </div>
 
@@ -325,7 +342,7 @@
                 <span class="text-[10px] bg-[#E5E0DA] px-2 py-0.5 rounded text-[#2C221E]">25 Seconds</span>
               </div>
               <p class="text-[#6B5E55]">
-                <strong class="text-[#2C221E]">Action:</strong> Switch to the Recruiter Pipeline tab. Open Sarah's candidate drawer to view match score, strengths, resume text, and status controls.<br/>
+                <strong class="text-[#2C221E]">Action:</strong> Switch to the Recruiter Pipeline tab. Open candidate drawer to view match score, strengths, actual extracted resume text, handoff status, and status override controls.<br/>
                 <strong class="text-[#2C221E]">Voiceover:</strong> "On the Recruiter Dashboard, hiring managers see real-time metrics across Qualified, Needs Review, and Not a Fit candidates. One-click drawers reveal detailed AI rationale, extracted resumes, and handoff notes."
               </p>
             </div>

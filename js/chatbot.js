@@ -1,5 +1,6 @@
 /**
- * RecruitFlow AI™ - Chatbot Logic & Conversational Controller (Executive White & Brown Theme)
+ * RecruitFlow AI™ - Chatbot Logic & Conversational Controller
+ * Genuine PDF/DOCX/TXT Parser + Gemini API Integration + Strict Error UX
  */
 
 class Chatbot {
@@ -21,7 +22,8 @@ class Chatbot {
       resumeText: "",
       resumeFileName: "",
       handoffRequested: false,
-      handoffMessage: ""
+      handoffReason: "",
+      handoffTimestamp: null
     };
     this.messages = [];
     this.isProcessing = false;
@@ -60,13 +62,13 @@ class Chatbot {
 
         <!-- Chat Messages Box -->
         <div id="chat-messages-container" class="flex-1 overflow-y-auto p-6 space-y-4 scroll-smooth bg-white">
-          <!-- Messages will render dynamically here -->
+          <!-- Messages render here -->
         </div>
 
         <!-- Interactive Quick Actions / Input Area -->
         <div class="chat-input-area p-4 bg-[#F8F6F2] border-t border-[#E5E0DA]">
           <div id="quick-options-container" class="flex flex-wrap gap-2 mb-3 hidden">
-            <!-- Dynamic quick buttons will render here -->
+            <!-- Dynamic quick buttons render here -->
           </div>
 
           <form id="chat-form" class="flex items-center gap-2">
@@ -105,7 +107,6 @@ class Chatbot {
       this.resetBtn.addEventListener("click", () => this.reset());
     }
 
-    // Start Conversation
     this.startConversation();
   }
 
@@ -115,7 +116,7 @@ class Chatbot {
     this.messagesContainer.innerHTML = "";
     
     this.addBotMessage(
-      "👋 Hello! Welcome to **RecruitFlow AI™**. I'm your executive screening assistant.\n\nI can help screen your profile and submit your candidate application directly to our hiring team in under 2 minutes!\n\nTo get started, what is your **full name** and **email address**?"
+      "👋 Hello! Welcome to **RecruitFlow AI™**. I'm your recruitment screening assistant.\n\nTo begin your candidate application, what is your **full name**?"
     );
   }
 
@@ -134,7 +135,8 @@ class Chatbot {
       resumeText: "",
       resumeFileName: "",
       handoffRequested: false,
-      handoffMessage: ""
+      handoffReason: "",
+      handoffTimestamp: null
     };
     this.startConversation();
   }
@@ -143,7 +145,6 @@ class Chatbot {
     const msgId = "msg-" + Date.now() + Math.random().toString(36).substring(2, 5);
     const formattedText = this.formatMarkdown(text);
     
-    // Bot Bubble: Light warm gray-ivory (#F0ECE6) with dark brown text (#2C221E) and clean border (#E5E0DA)
     const msgHTML = `
       <div id="${msgId}" class="flex gap-3 max-w-[85%] animate-fade-in">
         <div class="w-8 h-8 rounded-full bg-[#5C4033] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm">
@@ -165,7 +166,6 @@ class Chatbot {
 
   addUserMessage(text) {
     const formattedText = this.formatMarkdown(text);
-    // User Bubble: Rich espresso brown (#5C4033) with white text (#FFFFFF)
     const msgHTML = `
       <div class="flex gap-3 max-w-[85%] ml-auto justify-end animate-fade-in">
         <div class="space-y-1 text-right">
@@ -184,17 +184,18 @@ class Chatbot {
     this.scrollToBottom();
   }
 
-  showTypingIndicator() {
+  showTypingIndicator(message = "Processing...") {
     const id = "typing-indicator";
     const html = `
       <div id="${id}" class="flex gap-3 max-w-[85%] animate-fade-in">
         <div class="w-8 h-8 rounded-full bg-[#5C4033] flex-shrink-0 flex items-center justify-center text-white text-xs font-bold shadow-sm">
           <i class="fa-solid fa-robot"></i>
         </div>
-        <div class="bg-[#F0ECE6] text-[#6B5E55] rounded-2xl rounded-tl-none px-4 py-3 text-sm flex items-center gap-1.5 border border-[#E5E0DA]">
+        <div class="bg-[#F0ECE6] text-[#6B5E55] rounded-2xl rounded-tl-none px-4 py-3 text-sm flex items-center gap-2 border border-[#E5E0DA]">
           <span class="w-2 h-2 bg-[#5C4033] rounded-full animate-bounce" style="animation-delay: 0ms"></span>
           <span class="w-2 h-2 bg-[#5C4033] rounded-full animate-bounce" style="animation-delay: 150ms"></span>
           <span class="w-2 h-2 bg-[#5C4033] rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+          <span class="text-xs font-semibold text-[#5C4033] ml-1">${message}</span>
         </div>
       </div>
     `;
@@ -261,24 +262,28 @@ class Chatbot {
   }
 
   triggerHandoff(userQuery) {
+    if (this.candidateData.handoffRequested) return; // Prevent duplicate triggers
+
     this.candidateData.handoffRequested = true;
-    this.candidateData.handoffMessage = userQuery;
+    this.candidateData.handoffReason = userQuery;
+    this.candidateData.handoffTimestamp = new Date().toISOString();
 
     if (this.candidateData.id) {
       const candidates = StorageService.getCandidates();
       const existing = candidates.find(c => c.id === this.candidateData.id);
       if (existing) {
         existing.handoffRequested = true;
-        existing.handoffMessage = userQuery;
+        existing.handoffReason = userQuery;
+        existing.handoffTimestamp = this.candidateData.handoffTimestamp;
         StorageService.saveCandidates(candidates);
       }
     }
 
-    this.showTypingIndicator();
+    this.showTypingIndicator("Notifying recruiter...");
     setTimeout(() => {
       this.hideTypingIndicator();
       this.addBotMessage(
-        `🤝 **Human Recruiter Handoff Initiated**\n\nI've logged your request: *"${userQuery}"*.\n\nOur human recruitment team has been notified on the recruiter dashboard and will prioritize following up with you directly via email (**${this.candidateData.email || 'your contact email'}**)!`
+        `🤝 **I'll flag this for a recruiter so they can follow up with you.**\n\nI've logged your request: *"${userQuery}"*.\n\nOur human recruitment team has been alerted on the Recruiter Dashboard and will reach out to you directly at **${this.candidateData.email || 'your email'}**!`
       );
     }, 800);
   }
@@ -307,82 +312,83 @@ class Chatbot {
       this.hideTypingIndicator();
 
       switch (this.step) {
-        case 0:
-          this.parseNameAndEmail(userInput);
+        case 0: // Full Name
+          this.candidateData.fullName = userInput;
           this.step = 1;
+          this.addBotMessage(`Nice to meet you, **${this.candidateData.fullName}**! What is your **email address**?`);
+          break;
+
+        case 1: // Email Input & Validation
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!emailRegex.test(userInput)) {
+            this.addBotMessage("⚠️ Please provide a valid email address (e.g., `name@example.com`).");
+            this.isProcessing = false;
+            return;
+          }
+          this.candidateData.email = userInput;
+          this.step = 2;
           this.addBotMessage(
-            `Nice to meet you, **${this.candidateData.fullName}**! 🚀\n\nWhich target role are you applying for?`,
+            `Thank you! Which **target role** are you applying for?`,
             ["Senior Frontend Engineer", "Full Stack Developer", "AI / ML Engineer", "Product Manager"]
           );
           break;
 
-        case 1:
+        case 2: // Target Role
           this.candidateData.targetRole = userInput;
-          this.step = 2;
-          this.addBotMessage(
-            `Great choice! For the **${this.candidateData.targetRole}** role, how many **years of relevant experience** do you have, and what are your primary **skills**?\n*(e.g., "4 years exp in React, TypeScript, Node.js")*`,
-            ["3 years in React, TypeScript, CSS", "5 years in Python, PyTorch, LLMs", "4 years in Agile, Product Roadmap, Data Analytics"]
-          );
-          break;
-
-        case 2:
-          this.parseExperienceAndSkills(userInput);
           this.step = 3;
           this.addBotMessage(
-            `Got it! **${this.candidateData.experienceYears} years experience** with skills: *${this.candidateData.skills.join(", ") || 'General tech skills'}*.\n\nWhat is your **location** and preferred **work mode**?`,
-            ["San Francisco, CA (Hybrid)", "Remote (Anywhere)", "New York, NY (Onsite)", "Austin, TX (Remote)"]
+            `Great! How many **years of experience** do you have, and what are your **key skills**?\n*(e.g., "4 years experience with React, TypeScript, and REST APIs")*`,
+            ["3 years in React, TypeScript, CSS", "5 years in Python, PyTorch, LLMs", "4 years in Product Roadmap, Agile, Data Analytics"]
           );
           break;
 
-        case 3:
-          this.parseLocationAndMode(userInput);
+        case 3: // Experience & Skills
+          this.parseExperienceAndSkills(userInput);
           this.step = 4;
           this.addBotMessage(
-            `Understood. What is your **availability** or notice period?`,
+            `Understood! What is your current **location**?`
+          );
+          break;
+
+        case 4: // Location
+          this.candidateData.location = userInput;
+          this.step = 5;
+          this.addBotMessage(
+            `What is your preferred **work mode**?`,
+            ["Remote", "Hybrid", "Onsite"]
+          );
+          break;
+
+        case 5: // Work Mode
+          this.candidateData.workMode = userInput;
+          this.step = 6;
+          this.addBotMessage(
+            `What is your **availability** or notice period?`,
             ["Immediate / No notice", "2 weeks notice", "1 month notice"]
           );
           break;
 
-        case 4:
+        case 6: // Availability
           this.candidateData.availability = userInput;
-          this.step = 5;
+          this.step = 7;
           this.renderResumeIntakeStep();
           break;
 
-        case 5:
-          this.parseResumeText(userInput);
-          this.executeScreeningAndSave();
-          break;
-
-        case 6:
-          if (this.checkHandoffIntent(userInput)) {
-            this.triggerHandoff(userInput);
-          } else {
-            this.addBotMessage(
-              `Thanks for asking! I've logged your message: *"${userInput}"*.\n\nIs there anything else I can assist you with, or would you like to speak directly to a recruiter?`,
-              ["Request Human Recruiter Call", "What are the next steps?", "Check recruiter dashboard"]
-            );
+        case 7: // Resume Intake -> Summary confirmation
+          // Text submitted manually
+          this.candidateData.resumeText = userInput;
+          if (!this.candidateData.resumeFileName) {
+            this.candidateData.resumeFileName = `${this.candidateData.fullName.replace(/\s+/g, '_')}_Resume.txt`;
           }
+          this.renderSummaryConfirmationStep();
           break;
 
         default:
-          this.addBotMessage("Your application has been received and logged! Thank you.");
+          this.addBotMessage("Your candidate profile is logged! Thank you.");
       }
 
       this.isProcessing = false;
-    }, 700);
-  }
-
-  parseNameAndEmail(text) {
-    const emailMatch = text.match(/([a-zA-Z0-9._-]+@[a-zA-Z0-9._-]+\.[a-zA-Z0-9._-]+)/gi);
-    if (emailMatch) {
-      this.candidateData.email = emailMatch[0];
-      let namePart = text.replace(emailMatch[0], '').replace(/my name is|i am|email is|email:|name:/gi, '').trim();
-      this.candidateData.fullName = namePart.length > 1 ? namePart : "Candidate";
-    } else {
-      this.candidateData.fullName = text.split(',')[0].replace(/my name is|i am/gi, '').trim() || "Candidate";
-      this.candidateData.email = "candidate@" + Date.now().toString(36) + ".com";
-    }
+    }, 600);
   }
 
   parseExperienceAndSkills(text) {
@@ -414,23 +420,10 @@ class Chatbot {
     }
   }
 
-  parseLocationAndMode(text) {
-    this.candidateData.location = text;
-    if (text.toLowerCase().includes('remote')) {
-      this.candidateData.workMode = 'Remote';
-    } else if (text.toLowerCase().includes('hybrid')) {
-      this.candidateData.workMode = 'Hybrid';
-    } else if (text.toLowerCase().includes('onsite')) {
-      this.candidateData.workMode = 'Onsite';
-    } else {
-      this.candidateData.workMode = 'Hybrid';
-    }
-  }
-
   renderResumeIntakeStep() {
     const intakeId = "resume-intake-" + Date.now();
     this.addBotMessage(
-      `📄 **Resume Intake Step**\n\nPlease paste a brief summary/highlights of your resume below, or drag & drop a sample text file:`
+      `📄 **Resume Intake Step**\n\nPlease upload your resume (**PDF**, **DOCX**, or **TXT** format, max 5MB), or paste your experience summary below:`
     );
 
     setTimeout(() => {
@@ -441,27 +434,36 @@ class Chatbot {
               <i class="fa-solid fa-file-arrow-up"></i>
             </div>
             <div>
-              <h4 class="text-[#2C221E] text-xs font-bold">Upload or Paste Resume</h4>
-              <p class="text-[#6B5E55] text-[11px]">Supports .txt, .pdf text summary intake</p>
+              <h4 class="text-[#2C221E] text-xs font-bold">Upload Resume File</h4>
+              <p class="text-[#6B5E55] text-[11px]">Supports PDF, DOCX, TXT (Max 5MB)</p>
             </div>
           </div>
           
+          <div id="drag-drop-zone-${intakeId}" class="p-3 bg-white rounded-lg border border-[#E5E0DA] text-center cursor-pointer hover:border-[#5C4033] transition-all">
+            <p class="text-xs text-[#6B5E55] flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-[#967259] fa-cloud-arrow-up"></i>
+              <span>Click to select file or drag & drop here</span>
+            </p>
+          </div>
+
           <textarea 
             id="resume-textarea-${intakeId}"
             rows="3" 
-            placeholder="Paste resume experience summary or key accomplishments here..." 
+            placeholder="Or paste resume experience summary here..." 
             class="w-full bg-white border border-[#E5E0DA] rounded-lg p-2.5 text-xs text-[#2C221E] placeholder-[#A3968C] focus:outline-none focus:border-[#5C4033]"
           ></textarea>
 
+          <div id="resume-parse-status-${intakeId}" class="text-[11px] text-[#5C4033] font-medium hidden"></div>
+
           <div class="flex items-center justify-between gap-2">
-            <input type="file" id="file-input-${intakeId}" accept=".txt,.pdf,.docx" class="hidden" />
+            <input type="file" id="file-input-${intakeId}" accept=".pdf,.docx,.txt" class="hidden" />
             <button 
               type="button" 
               onclick="document.getElementById('file-input-${intakeId}').click()" 
               class="text-xs bg-white hover:bg-[#F0ECE6] text-[#2C221E] px-3 py-1.5 rounded-lg border border-[#E5E0DA] flex items-center gap-1.5 font-semibold"
             >
               <i class="fa-solid fa-paperclip text-[#967259]"></i>
-              <span id="file-name-label-${intakeId}">Attach File</span>
+              <span id="file-name-label-${intakeId}">Select File</span>
             </button>
 
             <button 
@@ -469,8 +471,8 @@ class Chatbot {
               id="submit-resume-btn-${intakeId}"
               class="text-xs bg-[#5C4033] hover:bg-[#432E24] text-white font-semibold px-4 py-1.5 rounded-lg flex items-center gap-1.5 shadow-md"
             >
-              <span>Submit & Screen</span>
-              <i class="fa-solid fa-bolt text-xs"></i>
+              <span>Review Summary</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
             </button>
           </div>
         </div>
@@ -483,69 +485,211 @@ class Chatbot {
       const fileInput = document.getElementById(`file-input-${intakeId}`);
       const fileNameLabel = document.getElementById(`file-name-label-${intakeId}`);
       const submitBtn = document.getElementById(`submit-resume-btn-${intakeId}`);
+      const parseStatus = document.getElementById(`resume-parse-status-${intakeId}`);
+      const dropZone = document.getElementById(`drag-drop-zone-${intakeId}`);
 
-      fileInput.addEventListener("change", (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          fileNameLabel.textContent = file.name;
-          this.candidateData.resumeFileName = file.name;
-          const reader = new FileReader();
-          reader.onload = (evt) => {
-            textarea.value = evt.target.result;
-          };
-          reader.readAsText(file);
+      const processFile = async (file) => {
+        if (!file) return;
+
+        // Size check (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          alert("File size exceeds 5MB limit. Please upload a smaller resume file.");
+          return;
+        }
+
+        fileNameLabel.textContent = file.name;
+        this.candidateData.resumeFileName = file.name;
+        parseStatus.classList.remove("hidden");
+        parseStatus.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Extracting text from ${file.name}...`;
+
+        const ext = file.name.split('.').pop().toLowerCase();
+
+        try {
+          let extractedText = "";
+
+          if (ext === 'pdf') {
+            if (!window.pdfjsLib) throw new Error("PDF.js library not loaded.");
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let fullText = "";
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+              const page = await pdf.getPage(i);
+              const textContent = await page.getTextContent();
+              const pageText = textContent.items.map(item => item.str).join(" ");
+              fullText += pageText + "\n";
+            }
+
+            extractedText = fullText.trim();
+            if (!extractedText) {
+              parseStatus.innerHTML = `<span class="text-amber-700">⚠️ Scanned/Image-only PDF detected. No readable text could be extracted. Please paste your experience text in the box below.</span>`;
+            }
+          } else if (ext === 'docx') {
+            if (!window.mammoth) throw new Error("Mammoth.js library not loaded.");
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await window.mammoth.extractRawText({ arrayBuffer });
+            extractedText = (result.value || "").trim();
+          } else if (ext === 'txt') {
+            extractedText = await file.text();
+          } else {
+            throw new Error("Unsupported file format. Please upload a .pdf, .docx, or .txt file.");
+          }
+
+          if (extractedText) {
+            textarea.value = extractedText;
+            this.candidateData.resumeText = extractedText;
+            parseStatus.innerHTML = `<span class="text-emerald-700 font-bold">✓ Extracted ${extractedText.length} characters from ${file.name}</span>`;
+          }
+        } catch (err) {
+          console.error("Resume parse error:", err);
+          parseStatus.innerHTML = `<span class="text-rose-700">❌ Error reading file: ${err.message}. Please paste summary text below.</span>`;
+        }
+      };
+
+      dropZone.addEventListener("click", () => fileInput.click());
+      fileInput.addEventListener("change", (e) => processFile(e.target.files[0]));
+
+      dropZone.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropZone.classList.add("border-[#5C4033]");
+      });
+
+      dropZone.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropZone.classList.remove("border-[#5C4033]");
+        if (e.dataTransfer.files.length > 0) {
+          processFile(e.dataTransfer.files[0]);
         }
       });
 
       submitBtn.addEventListener("click", () => {
-        const resumeText = textarea.value.trim() || "Experienced software engineering candidate with proven track record in software architecture, component development, and agile team workflows.";
-        this.candidateData.resumeText = resumeText;
-        if (!this.candidateData.resumeFileName) {
-          this.candidateData.resumeFileName = `${this.candidateData.fullName.replace(/\s+/g, '_')}_Resume.pdf`;
+        const text = textarea.value.trim();
+        if (!text) {
+          alert("Please upload a valid resume or paste experience highlights before continuing.");
+          return;
         }
-        this.addUserMessage(`[Uploaded Resume: ${this.candidateData.resumeFileName}]`);
-        this.executeScreeningAndSave();
+        this.candidateData.resumeText = text;
+        if (!this.candidateData.resumeFileName) {
+          this.candidateData.resumeFileName = `${this.candidateData.fullName.replace(/\s+/g, '_')}_Resume.txt`;
+        }
+        this.addUserMessage(`[Resume Uploaded: ${this.candidateData.resumeFileName}]`);
+        this.renderSummaryConfirmationStep();
       });
     }, 300);
   }
 
-  parseResumeText(text) {
-    this.candidateData.resumeText = text;
-    if (!this.candidateData.resumeFileName) {
-      this.candidateData.resumeFileName = `${this.candidateData.fullName.replace(/\s+/g, '_')}_Resume.txt`;
-    }
-  }
+  renderSummaryConfirmationStep() {
+    this.step = 8;
+    const summaryId = "candidate-summary-" + Date.now();
 
-  executeScreeningAndSave() {
-    this.step = 6;
-    this.showTypingIndicator();
+    const summaryHTML = `
+🎯 **Candidate Information Summary**
+
+Please review your application details before running AI screening:
+
+• **Full Name:** ${this.candidateData.fullName}
+• **Email:** ${this.candidateData.email}
+• **Target Role:** ${this.candidateData.targetRole}
+• **Experience:** ${this.candidateData.experienceYears} Years
+• **Skills:** ${Array.isArray(this.candidateData.skills) ? this.candidateData.skills.join(', ') : this.candidateData.skills}
+• **Location / Mode:** ${this.candidateData.location} (${this.candidateData.workMode})
+• **Availability:** ${this.candidateData.availability}
+• **Resume Attached:** ${this.candidateData.resumeFileName || 'Resume text provided'}
+    `;
+
+    this.addBotMessage(summaryHTML);
 
     setTimeout(() => {
+      const actionsHTML = `
+        <div id="${summaryId}" class="my-3 flex flex-wrap gap-3">
+          <button 
+            id="confirm-screen-btn-${summaryId}"
+            class="bg-[#5C4033] hover:bg-[#432E24] text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+          >
+            <span>Confirm & Run Gemini AI Screening</span>
+            <i class="fa-solid fa-sparkles text-xs"></i>
+          </button>
+
+          <button 
+            id="edit-info-btn-${summaryId}"
+            class="bg-white hover:bg-[#F0ECE6] text-[#2C221E] text-xs font-semibold px-4 py-2.5 rounded-xl border border-[#E5E0DA]"
+          >
+            <i class="fa-solid fa-[#967259] fa-pen-to-square mr-1"></i> Edit Info
+          </button>
+        </div>
+      `;
+
+      this.messagesContainer.insertAdjacentHTML("beforeend", actionsHTML);
+      this.scrollToBottom();
+
+      document.getElementById(`confirm-screen-btn-${summaryId}`).addEventListener("click", () => {
+        document.getElementById(summaryId).remove();
+        this.addUserMessage("Confirmed. Run Gemini AI screening!");
+        this.runGeminiScreening();
+      });
+
+      document.getElementById(`edit-info-btn-${summaryId}`).addEventListener("click", () => {
+        document.getElementById(summaryId).remove();
+        this.startConversation();
+      });
+    }, 300);
+  }
+
+  async runGeminiScreening() {
+    this.showTypingIndicator("Connecting to Gemini AI server...");
+
+    const retryId = "retry-container-" + Date.now();
+
+    try {
+      const response = await fetch("http://localhost:3001/api/screen-candidate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidateProfile: this.candidateData,
+          resumeText: this.candidateData.resumeText,
+          jobCriteria: StorageService.getCriteria()
+        })
+      });
+
       this.hideTypingIndicator();
 
-      const evaluation = ScreeningEngine.evaluateCandidate(this.candidateData);
-      
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({ error: `Server returned HTTP ${response.status}` }));
+        throw new Error(errData.error || `Server returned HTTP ${response.status}`);
+      }
+
+      const result = await response.json();
+
+      if (!result.success || !result.evaluation) {
+        throw new Error(result.error || "Invalid response structure from screening backend");
+      }
+
+      // Validated Evaluation
+      const evalData = result.evaluation;
+
+      // Save candidate strictly on success
       const finalCandidate = {
         id: "cand-" + Date.now().toString(36),
-        fullName: this.candidateData.fullName || "Candidate",
-        email: this.candidateData.email || "candidate@example.com",
+        fullName: this.candidateData.fullName,
+        email: this.candidateData.email,
         phone: "+1 (555) " + Math.floor(100 + Math.random() * 900) + "-" + Math.floor(1000 + Math.random() * 9000),
         targetRole: this.candidateData.targetRole,
         experienceYears: this.candidateData.experienceYears,
         skills: this.candidateData.skills,
-        location: this.candidateData.location || "Remote",
+        location: this.candidateData.location,
         workMode: this.candidateData.workMode,
         availability: this.candidateData.availability,
-        salaryExpectation: this.candidateData.salaryExpectation || "$120,000 - $140,000 / year",
-        resumeText: this.candidateData.resumeText || "Candidate submitted experience details during chatbot intake.",
-        resumeFileName: this.candidateData.resumeFileName || "Candidate_Resume.pdf",
+        salaryExpectation: "$120,000 - $140,000 / year",
+        resumeText: this.candidateData.resumeText,
+        resumeFileName: this.candidateData.resumeFileName || "Resume.pdf",
         appliedAt: new Date().toISOString(),
-        status: evaluation.status,
-        matchScore: evaluation.matchScore,
-        screeningResult: evaluation,
-        notes: `Automatically screened by RecruitFlow AI on ${new Date().toLocaleDateString()}. Score: ${evaluation.matchScore}%.`,
+        status: evalData.status,
+        matchScore: evalData.score,
+        screeningResult: evalData,
+        notes: `Screened by Gemini AI on ${new Date().toLocaleDateString()}. Score: ${evalData.score}%.`,
         handoffRequested: this.candidateData.handoffRequested,
-        handoffMessage: this.candidateData.handoffMessage
+        handoffReason: this.candidateData.handoffReason,
+        handoffTimestamp: this.candidateData.handoffTimestamp
       };
 
       this.candidateData.id = finalCandidate.id;
@@ -554,37 +698,72 @@ class Chatbot {
       window.dispatchEvent(new CustomEvent("recruitflow_candidate_added", { detail: finalCandidate }));
 
       let statusBadge = '';
-      if (evaluation.status === 'Qualified') {
-        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">✨ Qualified Candidate (Score: ' + evaluation.matchScore + '%)</span>';
-      } else if (evaluation.status === 'Needs Review') {
-        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">⚠️ Needs Recruiter Review (Score: ' + evaluation.matchScore + '%)</span>';
+      if (evalData.status === 'Qualified') {
+        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300">✨ Qualified Candidate (Score: ' + evalData.score + '%)</span>';
+      } else if (evalData.status === 'Needs Review') {
+        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">⚠️ Needs Recruiter Review (Score: ' + evalData.score + '%)</span>';
       } else {
-        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">📊 Not a Fit (Score: ' + evaluation.matchScore + '%)</span>';
+        statusBadge = '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-100 text-rose-800 border border-rose-300">📊 Not a Fit (Score: ' + evalData.score + '%)</span>';
       }
 
       const summaryMsg = `
-🎯 **Screening Evaluation Complete!**
+🎯 **Gemini AI Screening Complete!**
 
 ${statusBadge}
 
-**AI Match Summary:**
-• **Target Role:** ${evaluation.targetRoleName}
-• **Matching Core Skills:** ${evaluation.matchingSkills.join(', ') || 'General qualifications'}
-• **AI Recommendation:** ${evaluation.recommendation}
+**AI Evaluation Breakdown:**
+• **Matching Core Skills:** ${(evalData.matchedSkills || []).join(', ') || 'Qualifications verified'}
+• **Skill Gaps:** ${(evalData.skillGaps || evalData.missingSkills || []).join(', ') || 'None identified'}
+• **Strengths:** ${(evalData.strengths || []).join('. ')}
+• **AI Rationale:** ${evalData.rationale}
 
-📥 **Candidate Pipeline Sync:** Your candidate profile has been recorded in the **Recruiter Pipeline Dashboard** under status **${evaluation.status}**.
+📥 **Pipeline Sync:** Your profile has been recorded in the **Recruiter Pipeline Dashboard** under status **${evalData.status}**.
 
-${evaluation.status === 'Qualified' 
-  ? '🎉 **Next Steps:** A recruiter from our team will contact you at **' + finalCandidate.email + '** within 24 hours to schedule your interview!' 
-  : 'Thank you for your interest! Our recruiting team reviews all applications. Feel free to ask any additional questions below.'}
+*Disclaimer: AI screening is an assistive recommendation and does not replace recruiter judgment.*
       `;
 
       this.addBotMessage(summaryMsg, [
-        "What are the next steps?",
         "Can I speak to a human recruiter?",
         "View Candidate Dashboard"
       ]);
-    }, 1000);
+
+    } catch (err) {
+      this.hideTypingIndicator();
+      console.error("Screening failure:", err);
+
+      // EXPLICIT NO SILENT FALLBACK UX: Show clear error + Retry button
+      const errorMsgHTML = `
+⚠️ **AI Screening Unavailable**
+
+${err.message}
+
+*Note: Please ensure the Express server is running on \`http://localhost:3001\` and a valid \`GEMINI_API_KEY\` is configured in your \`.env\` file.*
+      `;
+
+      this.addBotMessage(errorMsgHTML);
+
+      setTimeout(() => {
+        const retryHTML = `
+          <div id="${retryId}" class="my-3">
+            <button 
+              id="retry-screening-btn-${retryId}"
+              class="bg-amber-700 hover:bg-amber-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2"
+            >
+              <i class="fa-solid fa-rotate-right"></i>
+              <span>Retry AI Screening</span>
+            </button>
+          </div>
+        `;
+        this.messagesContainer.insertAdjacentHTML("beforeend", retryHTML);
+        this.scrollToBottom();
+
+        document.getElementById(`retry-screening-btn-${retryId}`).addEventListener("click", () => {
+          document.getElementById(retryId).remove();
+          this.addUserMessage("Retrying Gemini AI screening...");
+          this.runGeminiScreening();
+        });
+      }, 300);
+    }
   }
 }
 
