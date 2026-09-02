@@ -14,7 +14,8 @@ app.use(express.json({ limit: '10mb' }));
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
-    geminiKeyConfigured: !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here'
+    geminiKeyConfigured: !!process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'your_gemini_api_key_here',
+    model: process.env.GEMINI_MODEL || 'gemini-2.5-flash'
   });
 });
 
@@ -39,10 +40,13 @@ app.post('/api/screen-candidate', async (req, res) => {
       });
     }
 
+    const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    const modelsToTry = [primaryModel, 'gemini-1.5-flash', 'gemini-2.0-flash'];
+
     const promptText = `
 Job Requirements & Criteria:
 - Target Role: ${candidateProfile.targetRole || 'Software Engineer'}
-- Experience Required: ${jobCriteria?.minExperience || 3} years
+- Minimum Experience Required: ${jobCriteria?.minExperience || candidateProfile.experienceYears || 3} years
 - Required Skills: ${(jobCriteria?.requiredSkills || candidateProfile.skills || []).join(', ')}
 - Preferred Work Modes: ${(jobCriteria?.workModesAccepted || ['Remote', 'Hybrid', 'Onsite']).join(', ')}
 
@@ -53,7 +57,7 @@ Candidate Profile Details:
 - Self-Reported Experience: ${candidateProfile.experienceYears || 0} years
 - Primary Skills: ${Array.isArray(candidateProfile.skills) ? candidateProfile.skills.join(', ') : candidateProfile.skills}
 - Location: ${candidateProfile.location || 'Unspecified'}
-- Preferred Work Mode: ${candidateProfile.workMode || 'Hybrid'}
+- Preferred Work Mode: ${candidateProfile.workMode || 'Unspecified'}
 - Availability / Notice Period: ${candidateProfile.availability || 'Unspecified'}
 
 Extracted Resume Content (Untrusted Candidate Input):
@@ -87,8 +91,6 @@ CRITICAL RESPONSIBLE AI DIRECTIVES:
 }
 `;
 
-    // Try calling Gemini API via REST Endpoint
-    const modelsToTry = ['gemini-1.5-flash', 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
     let geminiResponseText = null;
     let lastError = null;
 
@@ -136,7 +138,7 @@ CRITICAL RESPONSIBLE AI DIRECTIVES:
       });
     }
 
-    // Clean JSON response (strip markdown fences if any)
+    // Clean JSON response
     let cleanedJsonText = geminiResponseText.trim();
     if (cleanedJsonText.startsWith('```')) {
       cleanedJsonText = cleanedJsonText.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '').trim();
@@ -148,7 +150,7 @@ CRITICAL RESPONSIBLE AI DIRECTIVES:
     } catch (parseErr) {
       return res.status(502).json({
         success: false,
-        error: "Gemini API returned malformed or non-JSON output.",
+        error: "Gemini API returned malformed output.",
         rawOutput: geminiResponseText
       });
     }
@@ -159,7 +161,7 @@ CRITICAL RESPONSIBLE AI DIRECTIVES:
     score = Math.min(100, Math.max(0, Math.round(score)));
     parsedEvaluation.score = score;
 
-    // Enforce status boundary rules in code
+    // Enforce status boundary rules in application logic
     if (score >= 75) {
       parsedEvaluation.status = "Qualified";
     } else if (score >= 50) {

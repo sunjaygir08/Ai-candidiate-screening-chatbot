@@ -1,7 +1,17 @@
 /**
  * RecruitFlow AI™ - Recruiter Pipeline Dashboard Renderer & Controller
- * Zero-State Polish, Dynamic Metric Counters, Sorting, Handoff Resolution, and CSV Export
+ * Includes HTML Sanitization, Zero-State Polish, Dynamic Metric Counters, Sorting, and Handoff Resolution
  */
+
+function escapeHTML(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 class Dashboard {
   constructor(containerId) {
@@ -14,7 +24,7 @@ class Dashboard {
       search: '',
       status: 'ALL',
       role: 'ALL',
-      sortBy: 'newest' // 'newest', 'oldest', 'score_desc', 'score_asc'
+      sortBy: 'newest'
     };
 
     this.init();
@@ -72,7 +82,6 @@ class Dashboard {
       return matchesSearch && matchesStatus && matchesRole;
     });
 
-    // Sorting
     this.filteredCandidates.sort((a, b) => {
       if (this.filters.sortBy === 'score_desc') {
         return (b.matchScore || 0) - (a.matchScore || 0);
@@ -81,7 +90,6 @@ class Dashboard {
       } else if (this.filters.sortBy === 'oldest') {
         return new Date(a.appliedAt || 0) - new Date(b.appliedAt || 0);
       } else {
-        // newest
         return new Date(b.appliedAt || 0) - new Date(a.appliedAt || 0);
       }
     });
@@ -124,21 +132,18 @@ class Dashboard {
 
         <!-- Filter & Search Control Panel -->
         <div class="bg-white border border-[#E5E0DA] p-4 rounded-2xl flex flex-col lg:flex-row items-center justify-between gap-4 exec-shadow">
-          <!-- Search Input -->
           <div class="relative w-full lg:w-72">
             <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#A3968C] text-sm"></i>
             <input 
               type="text" 
               id="dash-search-input" 
               placeholder="Search candidate, role, skill..." 
-              value="${this.filters.search}"
+              value="${escapeHTML(this.filters.search)}"
               class="w-full bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#2C221E] focus:outline-none focus:border-[#5C4033] placeholder-[#A3968C]"
             />
           </div>
 
-          <!-- Dropdown Filters & View Switcher -->
           <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            <!-- Status Filter -->
             <select id="dash-status-filter" class="bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl px-3 py-2.5 text-xs text-[#2C221E] font-medium focus:outline-none focus:border-[#5C4033]">
               <option value="ALL" ${this.filters.status === 'ALL' ? 'selected' : ''}>All Statuses</option>
               <option value="Qualified" ${this.filters.status === 'Qualified' ? 'selected' : ''}>✨ Qualified</option>
@@ -147,7 +152,6 @@ class Dashboard {
               <option value="HANDOFF" ${this.filters.status === 'HANDOFF' ? 'selected' : ''}>🤝 Handoff Requested</option>
             </select>
 
-            <!-- Role Filter -->
             <select id="dash-role-filter" class="bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl px-3 py-2.5 text-xs text-[#2C221E] font-medium focus:outline-none focus:border-[#5C4033]">
               <option value="ALL">All Target Roles</option>
               <option value="Senior Frontend Engineer">Senior Frontend Engineer</option>
@@ -156,7 +160,6 @@ class Dashboard {
               <option value="Product Manager">Product Manager</option>
             </select>
 
-            <!-- Sort By -->
             <select id="dash-sort-filter" class="bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl px-3 py-2.5 text-xs text-[#2C221E] font-medium focus:outline-none focus:border-[#5C4033]">
               <option value="newest" ${this.filters.sortBy === 'newest' ? 'selected' : ''}>Newest First</option>
               <option value="oldest" ${this.filters.sortBy === 'oldest' ? 'selected' : ''}>Oldest First</option>
@@ -164,7 +167,6 @@ class Dashboard {
               <option value="score_asc" ${this.filters.sortBy === 'score_asc' ? 'selected' : ''}>Lowest Score</option>
             </select>
 
-            <!-- View Switcher -->
             <div class="flex items-center bg-[#F0ECE6] border border-[#E5E0DA] p-1 rounded-xl">
               <button id="view-table-btn" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${this.currentViewMode === 'table' ? 'bg-[#5C4033] text-white shadow-sm' : 'text-[#6B5E55] hover:text-[#2C221E]'}">
                 <i class="fa-solid fa-table-list mr-1.5"></i>Table
@@ -176,7 +178,6 @@ class Dashboard {
           </div>
         </div>
 
-        <!-- Main Candidate Pipeline Output Container -->
         <div id="candidate-pipeline-content">
           <!-- Table or Kanban renders here -->
         </div>
@@ -206,7 +207,6 @@ class Dashboard {
     const container = document.getElementById("dashboard-stats-container");
     if (!container) return;
 
-    // Calculated purely from actual candidates
     const total = this.candidates.length;
     const qualified = this.candidates.filter(c => c.status === 'Qualified').length;
     const review = this.candidates.filter(c => c.status === 'Needs Review').length;
@@ -271,7 +271,6 @@ class Dashboard {
     const container = document.getElementById("candidate-pipeline-content");
     if (!container) return;
 
-    // Professional Empty State requirement
     if (this.candidates.length === 0) {
       container.innerHTML = `
         <div class="bg-white border border-[#E5E0DA] rounded-2xl p-12 text-center space-y-4 exec-shadow">
@@ -323,29 +322,26 @@ class Dashboard {
       
       return `
         <tr class="border-b border-[#E5E0DA] hover:bg-[#F8F6F2] transition-colors group cursor-pointer" onclick="window.dashboardApp.openDetailModal('${c.id}')">
-          <!-- Candidate Name & Email -->
           <td class="py-4 px-6">
             <div class="flex items-center gap-3">
               <div class="w-10 h-10 rounded-full bg-[#5C4033] flex items-center justify-center text-white font-bold text-sm shadow-sm">
-                ${(c.fullName || 'C').charAt(0).toUpperCase()}
+                ${escapeHTML((c.fullName || 'C').charAt(0).toUpperCase())}
               </div>
               <div>
                 <div class="font-bold text-[#2C221E] text-sm group-hover:text-[#967259] transition-colors flex items-center gap-2">
-                  ${c.fullName}
+                  ${escapeHTML(c.fullName)}
                   ${c.handoffRequested ? '<span title="Human handoff requested" class="text-[#5C4033] text-xs"><i class="fa-solid fa-headset"></i></span>' : ''}
                 </div>
-                <div class="text-xs text-[#6B5E55]">${c.email}</div>
+                <div class="text-xs text-[#6B5E55]">${escapeHTML(c.email)}</div>
               </div>
             </div>
           </td>
 
-          <!-- Target Role & Experience -->
           <td class="py-4 px-6">
-            <div class="text-sm font-semibold text-[#2C221E]">${c.targetRole}</div>
-            <div class="text-xs text-[#6B5E55]">${c.experienceYears} Yrs Exp • ${c.workMode || 'Hybrid'}</div>
+            <div class="text-sm font-semibold text-[#2C221E]">${escapeHTML(c.targetRole)}</div>
+            <div class="text-xs text-[#6B5E55]">${c.experienceYears} Yrs Exp • ${escapeHTML(c.workMode || 'Hybrid')}</div>
           </td>
 
-          <!-- Match Score -->
           <td class="py-4 px-6">
             <div class="flex items-center gap-2">
               <div class="w-12 bg-[#E5E0DA] h-2 rounded-full overflow-hidden">
@@ -355,7 +351,6 @@ class Dashboard {
             </div>
           </td>
 
-          <!-- Status Badge & Selector -->
           <td class="py-4 px-6" onclick="event.stopPropagation()">
             <div class="flex items-center gap-2">
               ${statusBadge}
@@ -370,15 +365,13 @@ class Dashboard {
             </div>
           </td>
 
-          <!-- Resume Link -->
           <td class="py-4 px-6 text-xs text-[#6B5E55]">
             <span class="inline-flex items-center gap-1.5 text-[#5C4033] hover:underline font-semibold">
               <i class="fa-solid fa-file-pdf text-[#967259]"></i>
-              ${c.resumeFileName || 'Resume.pdf'}
+              ${escapeHTML(c.resumeFileName || 'Resume.pdf')}
             </span>
           </td>
 
-          <!-- Date & Action -->
           <td class="py-4 px-6 text-right">
             <div class="text-xs text-[#6B5E55] mb-1 font-medium">${appliedDate}</div>
             <button 
@@ -428,8 +421,8 @@ class Dashboard {
         >
           <div class="flex items-start justify-between">
             <div>
-              <h4 class="font-bold text-[#2C221E] text-sm group-hover:text-[#967259] transition-colors">${c.fullName}</h4>
-              <p class="text-xs text-[#6B5E55]">${c.targetRole}</p>
+              <h4 class="font-bold text-[#2C221E] text-sm group-hover:text-[#967259] transition-colors">${escapeHTML(c.fullName)}</h4>
+              <p class="text-xs text-[#6B5E55]">${escapeHTML(c.targetRole)}</p>
             </div>
             <span class="text-xs font-bold px-2 py-0.5 rounded ${c.matchScore >= 75 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : c.matchScore >= 50 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">
               ${c.matchScore}%
@@ -437,12 +430,12 @@ class Dashboard {
           </div>
 
           <div class="flex flex-wrap gap-1 text-[10px]">
-            ${(c.skills || []).slice(0, 3).map(s => `<span class="bg-[#F0ECE6] text-[#2C221E] px-2 py-0.5 rounded-md border border-[#E5E0DA] font-semibold">${s}</span>`).join("")}
+            ${(c.skills || []).slice(0, 3).map(s => `<span class="bg-[#F0ECE6] text-[#2C221E] px-2 py-0.5 rounded-md border border-[#E5E0DA] font-semibold">${escapeHTML(s)}</span>`).join("")}
           </div>
 
           <div class="flex items-center justify-between text-[11px] text-[#6B5E55] border-t border-[#E5E0DA] pt-2 font-medium">
             <span><i class="fa-solid fa-briefcase mr-1 text-[#967259]"></i>${c.experienceYears} Yrs Exp</span>
-            <span><i class="fa-solid fa-location-dot mr-1 text-[#967259]"></i>${c.workMode || 'Remote'}</span>
+            <span><i class="fa-solid fa-location-dot mr-1 text-[#967259]"></i>${escapeHTML(c.workMode || 'Remote')}</span>
           </div>
 
           ${c.handoffRequested ? `
@@ -508,9 +501,9 @@ class Dashboard {
     const container = modal.querySelector(".bg-white");
 
     const evalResult = candidate.screeningResult || {
-      matchScore: candidate.matchScore || 50,
+      score: candidate.matchScore || 50,
       status: candidate.status,
-      recommendation: "AI Screening evaluation result recorded.",
+      rationale: "AI Screening evaluation result recorded.",
       strengths: [],
       concerns: []
     };
@@ -520,14 +513,14 @@ class Dashboard {
       <div class="flex items-center justify-between p-6 border-b border-[#E5E0DA] bg-[#F0ECE6]/80">
         <div class="flex items-center gap-4">
           <div class="w-12 h-12 rounded-xl bg-[#5C4033] flex items-center justify-center text-white font-bold text-lg shadow-md">
-            ${(candidate.fullName || 'C').charAt(0).toUpperCase()}
+            ${escapeHTML((candidate.fullName || 'C').charAt(0).toUpperCase())}
           </div>
           <div>
             <div class="flex items-center gap-3">
-              <h3 class="text-xl font-extrabold text-[#2C221E]">${candidate.fullName}</h3>
+              <h3 class="text-xl font-extrabold text-[#2C221E]">${escapeHTML(candidate.fullName)}</h3>
               ${this.getStatusBadge(candidate.status, candidate.handoffRequested)}
             </div>
-            <p class="text-[#6B5E55] text-xs font-medium">${candidate.targetRole} • Submitted ${new Date(candidate.appliedAt || Date.now()).toLocaleDateString()}</p>
+            <p class="text-[#6B5E55] text-xs font-medium">${escapeHTML(candidate.targetRole)} • Submitted ${new Date(candidate.appliedAt || Date.now()).toLocaleDateString()}</p>
           </div>
         </div>
 
@@ -536,22 +529,20 @@ class Dashboard {
         </button>
       </div>
 
-      <!-- Modal Body (Two-Column Layout) -->
+      <!-- Modal Body -->
       <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        <!-- Left Column: Candidate Info & Resume -->
         <div class="lg:col-span-6 space-y-6">
-          <!-- Overview Cards -->
           <div class="bg-[#F8F6F2] border border-[#E5E0DA] p-4 rounded-xl space-y-3">
             <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">Candidate Profile Overview</h4>
             
             <div class="grid grid-cols-2 gap-3 text-xs">
               <div>
                 <span class="text-[#6B5E55] block font-medium">Email Address</span>
-                <span class="text-[#2C221E] font-bold">${candidate.email}</span>
+                <span class="text-[#2C221E] font-bold">${escapeHTML(candidate.email)}</span>
               </div>
               <div>
                 <span class="text-[#6B5E55] block font-medium">Phone</span>
-                <span class="text-[#2C221E] font-bold">${candidate.phone || 'N/A'}</span>
+                <span class="text-[#2C221E] font-bold">${escapeHTML(candidate.phone || 'N/A')}</span>
               </div>
               <div>
                 <span class="text-[#6B5E55] block font-medium">Experience</span>
@@ -559,43 +550,40 @@ class Dashboard {
               </div>
               <div>
                 <span class="text-[#6B5E55] block font-medium">Location / Mode</span>
-                <span class="text-[#2C221E] font-bold">${candidate.location || 'Remote'} (${candidate.workMode})</span>
+                <span class="text-[#2C221E] font-bold">${escapeHTML(candidate.location || 'Remote')} (${escapeHTML(candidate.workMode)})</span>
               </div>
               <div>
                 <span class="text-[#6B5E55] block font-medium">Availability</span>
-                <span class="text-[#2C221E] font-bold">${candidate.availability || 'Immediate'}</span>
+                <span class="text-[#2C221E] font-bold">${escapeHTML(candidate.availability || 'Immediate')}</span>
               </div>
               <div>
                 <span class="text-[#6B5E55] block font-medium">Target Role</span>
-                <span class="text-[#2C221E] font-bold">${candidate.targetRole}</span>
+                <span class="text-[#2C221E] font-bold">${escapeHTML(candidate.targetRole)}</span>
               </div>
             </div>
           </div>
 
-          <!-- Skills Chips -->
           <div class="space-y-2">
             <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Skills & Technical Competencies</h4>
             <div class="flex flex-wrap gap-1.5">
               ${(candidate.skills || []).map(s => `
-                <span class="px-2.5 py-1 rounded-lg text-xs bg-[#F0ECE6] text-[#2C221E] border border-[#E5E0DA] font-semibold">${s}</span>
+                <span class="px-2.5 py-1 rounded-lg text-xs bg-[#F0ECE6] text-[#2C221E] border border-[#E5E0DA] font-semibold">${escapeHTML(s)}</span>
               `).join("")}
             </div>
           </div>
 
-          <!-- Extracted Resume Text -->
           <div class="space-y-2">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider flex items-center gap-2">
                 <i class="fa-solid fa-file-lines text-[#967259]"></i>
-                Extracted Resume Content (${candidate.resumeFileName || 'Resume.pdf'})
+                Extracted Resume Content (${escapeHTML(candidate.resumeFileName || 'Resume.pdf')})
               </h4>
             </div>
             <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] text-[#2C221E] text-xs font-mono leading-relaxed max-h-48 overflow-y-auto whitespace-pre-wrap">
-              ${candidate.resumeText || 'No resume text extracted.'}
+              ${escapeHTML(candidate.resumeText || 'No resume text extracted.')}
             </div>
           </div>
 
-          <!-- Human Handoff Info & Resolution -->
           ${candidate.handoffRequested ? `
             <div class="bg-[#F4ECE4] border border-[#967259]/50 p-4 rounded-xl space-y-2">
               <div class="flex items-center justify-between">
@@ -609,15 +597,13 @@ class Dashboard {
                   Mark Handoff Resolved
                 </button>
               </div>
-              <p class="text-xs text-[#2C221E] italic">Reason: "${candidate.handoffReason || 'Candidate requested recruiter follow-up'}"</p>
+              <p class="text-xs text-[#2C221E] italic">Reason: "${escapeHTML(candidate.handoffReason || 'Candidate requested recruiter follow-up')}"</p>
               ${candidate.handoffTimestamp ? `<p class="text-[10px] text-[#6B5E55]">Requested: ${new Date(candidate.handoffTimestamp).toLocaleString()}</p>` : ''}
             </div>
           ` : ''}
         </div>
 
-        <!-- Right Column: AI Screening Insights & Recruiter Notes -->
         <div class="lg:col-span-6 space-y-6">
-          <!-- AI Score & Rationale -->
           <div class="bg-[#F8F6F2] border border-[#E5E0DA] p-5 rounded-xl space-y-4">
             <div class="flex items-center justify-between">
               <h4 class="text-xs font-bold text-[#5C4033] uppercase tracking-wider">Gemini AI Screening Breakdown</h4>
@@ -628,23 +614,21 @@ class Dashboard {
 
             <div class="p-3 bg-white rounded-lg border border-[#E5E0DA] text-xs text-[#2C221E]">
               <strong class="text-[#5C4033] block mb-1">AI Rationale Summary:</strong>
-              ${evalResult.rationale || evalResult.recommendation || 'No rationale provided.'}
+              ${escapeHTML(evalResult.rationale || evalResult.recommendation || 'No rationale provided.')}
             </div>
 
-            <!-- Strengths -->
             <div class="space-y-1">
               <span class="text-xs font-bold text-emerald-800">Strengths:</span>
               <ul class="text-xs text-[#2C221E] space-y-1 pl-4 list-disc">
-                ${(evalResult.strengths || []).map(st => `<li>${st}</li>`).join("") || '<li>Satisfies base criteria</li>'}
+                ${(evalResult.strengths || []).map(st => `<li>${escapeHTML(st)}</li>`).join("") || '<li>Satisfies base criteria</li>'}
               </ul>
             </div>
 
-            <!-- Skill Gaps -->
             ${(evalResult.skillGaps || evalResult.missingSkills || evalResult.concerns) ? `
               <div class="space-y-1">
                 <span class="text-xs font-bold text-rose-800">Skill Gaps & Concerns:</span>
                 <ul class="text-xs text-[#2C221E] space-y-1 pl-4 list-disc">
-                  ${(evalResult.skillGaps || evalResult.missingSkills || evalResult.concerns || []).map(c => `<li>${c}</li>`).join("") || '<li>None identified</li>'}
+                  ${(evalResult.skillGaps || evalResult.missingSkills || evalResult.concerns || []).map(c => `<li>${escapeHTML(c)}</li>`).join("") || '<li>None identified</li>'}
                 </ul>
               </div>
             ` : ''}
@@ -654,7 +638,6 @@ class Dashboard {
             </p>
           </div>
 
-          <!-- Recruiter Notes & Status Override -->
           <div class="space-y-3">
             <h4 class="text-xs font-bold text-[#6B5E55] uppercase tracking-wider">Recruiter Override & Notes</h4>
             
@@ -684,9 +667,9 @@ class Dashboard {
             <textarea 
               id="recruiter-notes-input"
               rows="3" 
-              placeholder="Add recruiter notes (e.g., candidate interviewed, salary flexible)..." 
+              placeholder="Add recruiter notes..." 
               class="w-full bg-[#F8F6F2] border border-[#E5E0DA] rounded-xl p-3 text-xs text-[#2C221E] placeholder-[#A3968C] focus:outline-none focus:border-[#5C4033]"
-            >${candidate.notes || ''}</textarea>
+            >${escapeHTML(candidate.notes || '')}</textarea>
 
             <div class="flex items-center justify-between">
               <button 
@@ -763,7 +746,7 @@ class Dashboard {
 
     const rolesHTML = (criteria.roles || []).map((r, idx) => `
       <div class="bg-[#F8F6F2] p-4 rounded-xl border border-[#E5E0DA] space-y-3">
-        <h4 class="text-xs font-extrabold text-[#5C4033] uppercase tracking-wider">${r.title} Rules</h4>
+        <h4 class="text-xs font-extrabold text-[#5C4033] uppercase tracking-wider">${escapeHTML(r.title)} Rules</h4>
         
         <div class="grid grid-cols-2 gap-3 text-xs">
           <div>
@@ -778,7 +761,7 @@ class Dashboard {
 
         <div>
           <label class="text-[#6B5E55] block text-xs mb-1 font-semibold">Required Skills (Comma separated)</label>
-          <input type="text" value="${(r.requiredSkills || []).join(', ')}" id="crit-skills-${idx}" class="w-full bg-white border border-[#E5E0DA] rounded px-2.5 py-1 text-xs text-[#2C221E] font-medium" />
+          <input type="text" value="${escapeHTML((r.requiredSkills || []).join(', '))}" id="crit-skills-${idx}" class="w-full bg-white border border-[#E5E0DA] rounded px-2.5 py-1 text-xs text-[#2C221E] font-medium" />
         </div>
       </div>
     `).join("");
@@ -835,14 +818,14 @@ class Dashboard {
     const headers = ["ID", "Name", "Email", "Role", "Experience (Yrs)", "Status", "AI Match Score", "Submitted Date", "Skills"];
     const rows = this.candidates.map(c => [
       c.id,
-      `"${c.fullName}"`,
-      `"${c.email}"`,
-      `"${c.targetRole}"`,
+      `"${(c.fullName || '').replace(/"/g, '""')}"`,
+      `"${(c.email || '').replace(/"/g, '""')}"`,
+      `"${(c.targetRole || '').replace(/"/g, '""')}"`,
       c.experienceYears,
       c.status,
       `${c.matchScore}%`,
       `"${new Date(c.appliedAt || Date.now()).toLocaleDateString()}"`,
-      `"${(c.skills || []).join(', ')}"`
+      `"${(c.skills || []).join(', ').replace(/"/g, '""')}"`
     ]);
 
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
@@ -937,7 +920,7 @@ class Dashboard {
   showToast(message) {
     const toast = document.createElement("div");
     toast.className = "fixed bottom-6 right-6 z-50 bg-[#2C221E] text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 animate-bounce";
-    toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${message}`;
+    toast.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> ${escapeHTML(message)}`;
     document.body.appendChild(toast);
     setTimeout(() => toast.remove(), 3000);
   }
