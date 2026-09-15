@@ -1,6 +1,7 @@
 # Environment variables & Sensitive keys
 .env
 .env.example
+.git/
 .env.local
 .env.development.local
 .env.test.local
