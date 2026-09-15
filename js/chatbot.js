@@ -712,10 +712,10 @@ Please review your details before running AI screening:
     const retryId = "retry-container-" + Date.now();
 
     try {
-      const API_BASE_URL =
-        ["localhost", "127.0.0.1"].includes(window.location.hostname)
-          ? "http://localhost:3001"
-          : "https://ai-candidate-screening-chatbot.vercel.app";
+      // Local frontend (e.g. Live Server / npx serve) talks to the local Express backend.
+      // On Vercel, the API is same-origin at /api/*, so no hardcoded deployment URL is needed.
+      const isLocalFrontend = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+      const API_BASE_URL = isLocalFrontend ? "http://localhost:3001" : "";
 
       const response = await fetch(`${API_BASE_URL}/api/screen-candidate`, {
         method: "POST",

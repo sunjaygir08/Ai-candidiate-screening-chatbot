@@ -41,7 +41,7 @@ app.post('/api/screen-candidate', async (req, res) => {
     }
 
     const primaryModel = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-    const modelsToTry = [primaryModel, 'gemini-1.5-flash', 'gemini-2.0-flash'];
+    const modelsToTry = [primaryModel];
 
     const promptText = `
 Job Requirements & Criteria:
@@ -184,6 +184,11 @@ CRITICAL RESPONSIBLE AI DIRECTIVES:
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`RecruitFlow AI™ Backend Server running on http://localhost:${PORT}`);
-});
+// Local development only. Vercel imports this Express app as a serverless function.
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`RecruitFlow AI™ Backend Server running on http://localhost:${PORT}`);
+  });
+}
+
+export default app;
